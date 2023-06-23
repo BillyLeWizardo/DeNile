@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,16 +7,37 @@ public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb;
     private float xAxis;
-    PlayerStateList playerState;
+    private Animator playerAnim;
     private bool canDash = true;
     private bool dashed;
     private float gravity;
+    public PlayerStateList playerState;
+    private bool restoreTime;
+    private float restoreTimeSpeed;
+    private SpriteRenderer sr;
+
+    [Header("Player Stat Settings")]
+    
+    [SerializeField] private GameObject ManaLeak;
+    [SerializeField] private float hitFlashSpeed;
+    public int health;
+    public int maxHealth;
+
+    public delegate void OnHealthChangedDelegate();
+    public OnHealthChangedDelegate onHealthChangedCallback;
+
+    float healTimer;
+    [SerializeField] float timeToHeal;
+    [SerializeField] private GameObject healingLoopFX;
+    [Space(5)]
 
     [Header("Player Movement Settings")]
-
+    
     [SerializeField] private float walkSpeed = 1;
+    [Space(5)]
 
     [Header("Player Jump Settings")]
+    
     [SerializeField] private float jumpForce = 25;
     
     private int jumpBufferCounter = 0;
@@ -23,22 +45,44 @@ public class PlayerController : MonoBehaviour
 
     private float coyoteTimeCounter = 0;
     [SerializeField] private float coyoteTime;
+    [Space(5)]
 
     [Header("Player Ability Settings")]
-
-    private int extraJumpCounter = 0;
-    [SerializeField] private int maxExtraJumps;
 
     [SerializeField] private float dashSpeed;
     [SerializeField] private float dashTime;
     [SerializeField] private float dashCooldown;
+    private int extraJumpCounter = 0;
+    [SerializeField] private int maxExtraJumps;
+    [Space(5)]
 
-    [Header("Ground Check Settings:")]
+    [Header("Ground Check Settings")]
 
     [SerializeField] private Transform GroundCheck;
     [SerializeField] private float GroundCheckY = 0.2f;
     [SerializeField] private float GroundCheckX = 0.5f;
     [SerializeField] private LayerMask GroundLayer;
+    [Space(5)]
+
+    [Header("Player Recoil Settings")]
+    
+    [SerializeField] int recoilXSteps = 5;
+    [SerializeField] float recoilXSpeed = 100;
+    private int stepsXRecoiled;
+    [Space(5)]
+
+    [Header("Attack Settings")]
+
+    [SerializeField] private float playerDamage;
+    [SerializeField] private Transform sideAttackCheck;
+    [SerializeField] private Vector2 sideAttackArea;
+    [SerializeField] private LayerMask attackableLayer;
+    [SerializeField] private GameObject slashFX;
+    private bool attack = false;
+    private float attackCooldown, lastAttacked;
+    [Space(5)]
+
+
 
     public static PlayerController Instance;
 
@@ -60,7 +104,13 @@ public class PlayerController : MonoBehaviour
 
         rb = GetComponent<Rigidbody2D>();
 
+        sr = GetComponent<SpriteRenderer>();
+
+        playerAnim = GetComponent<Animator>();
+
         gravity = rb.gravityScale;
+
+        Health = maxHealth;
     }
 
     // Update is called once per frame
@@ -70,16 +120,33 @@ public class PlayerController : MonoBehaviour
         UpdateJumpingBools();
 
         if (playerState.Dashing) return;
-        
         FlipPlayer();
         Move();
         Jump();
         StartDash();
+        Attack();
+        ResetTimeScale();
+        InvincibilityFlicker();
+        Heal();
+    }
+
+    private void FixedUpdate()
+    {
+        if(playerState.Dashing) return;
+        playerRecoil();
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(sideAttackCheck.position, sideAttackArea);
     }
 
     void GetInputs()
     {
         xAxis = Input.GetAxisRaw("Horizontal");
+
+        attack = Input.GetButtonDown("Fire1");
     }
     
     void FlipPlayer()
@@ -87,16 +154,20 @@ public class PlayerController : MonoBehaviour
         if(xAxis < 0)
         {
             transform.localScale = new Vector2(-1, transform.localScale.y);
+            playerState.lookingRight = false;
         }
         else if (xAxis > 0)
         {
             transform.localScale = new Vector2(1, transform.localScale.y);
+            playerState.lookingRight = true;
         }
     }
 
     private void Move()
     {
         rb.velocity = new Vector2(walkSpeed * xAxis, rb.velocity.y);
+
+        playerAnim.SetBool("Walking", (rb.velocity.x != 0) && isGrounded());
     }
 
     void StartDash()
@@ -116,6 +187,7 @@ public class PlayerController : MonoBehaviour
     {
         canDash = false;
         playerState.Dashing = true;
+        playerAnim.SetTrigger("Dashing");
         rb.gravityScale = 0;
         rb.velocity = new Vector2(transform.localScale.x * dashSpeed, 0);
         yield return new WaitForSeconds(dashTime);
@@ -124,6 +196,71 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
     }
+
+    void Attack()
+    {
+        lastAttacked += Time.deltaTime;
+        if(attack && lastAttacked >= attackCooldown)
+        {
+            lastAttacked = 0;
+            playerAnim.SetTrigger("Attacking");
+
+            Hit(sideAttackCheck, sideAttackArea, ref playerState.recoilingX, recoilXSpeed);
+
+            Instantiate(slashFX, sideAttackCheck);
+
+        }
+    }
+
+    private void Hit(Transform attackTransform, Vector2 attackArea, ref bool recoilDirection, float recoilStrength)
+    {
+        Collider2D[] objectsHit = Physics2D.OverlapBoxAll(attackTransform.position, attackArea, 0, attackableLayer);
+
+        if(objectsHit.Length > 0)
+        {
+            recoilDirection = true;
+        }
+
+        for(int i = 0; i < objectsHit.Length; i++)
+        {
+            if (objectsHit[i].GetComponent<Enemy>() != null)
+            {
+                objectsHit[i].GetComponent<Enemy>().enemyHit(playerDamage, (transform.position - objectsHit[i].transform.position).normalized, recoilStrength);
+            }
+        }
+
+    }
+
+    void playerRecoil()
+    {
+        if (playerState.recoilingX)
+        {
+            if (playerState.lookingRight)
+            {
+                rb.velocity = new Vector2(-recoilXSpeed, 0);
+            }
+            else
+            {
+                rb.velocity = new Vector2 (recoilXSpeed, 0);
+            }
+        }
+
+        if(playerState.recoilingX && stepsXRecoiled < recoilXSteps)
+        {
+            stepsXRecoiled++;
+        }
+        else
+        {
+            StopRecoilX();
+        }
+    }
+
+    void StopRecoilX()
+    {
+        stepsXRecoiled = 0;
+        playerState.recoilingX = false;
+    }
+
     public bool isGrounded()
     {
         if(Physics2D.Raycast(GroundCheck.position, Vector2.down, GroundCheckY, GroundLayer) ||
@@ -163,6 +300,9 @@ public class PlayerController : MonoBehaviour
                 rb.velocity = new Vector3(rb.velocity.x, jumpForce);
             }
         }
+
+        playerAnim.SetBool("Jumping", !isGrounded());
+
     }
 
     void UpdateJumpingBools()
@@ -187,6 +327,104 @@ public class PlayerController : MonoBehaviour
         else
         {
             jumpBufferCounter--;
+        }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        Health -= Mathf.RoundToInt(damage);
+        StartCoroutine(CurrentlyInvincible());
+    }
+
+    IEnumerator CurrentlyInvincible()
+    {
+        playerState.invincibleState = true;
+        GameObject manaLeakParticles = Instantiate(ManaLeak, transform.position, Quaternion.identity);
+        Destroy(manaLeakParticles, 1.5f);
+        yield return new WaitForSeconds(1f);
+        playerState.invincibleState = false;
+    }
+
+    private void InvincibilityFlicker()
+    {
+        sr.material.color = playerState.invincibleState ? Color.Lerp(Color.white, Color.black, Mathf.PingPong(Time.time * hitFlashSpeed, 1.0f))
+            : Color.white;
+    }
+
+    public int Health
+    {
+        get { return health; }
+        set
+        {
+            if(health != value)
+            {
+                health = Mathf.Clamp(value, 0, maxHealth);
+
+                if(onHealthChangedCallback != null)
+                {
+                    onHealthChangedCallback.Invoke();
+                }
+            }
+        }
+    }
+    void ResetTimeScale()
+    {
+        if(restoreTime)
+        {
+            if(Time.timeScale < 1)
+            {
+                Time.timeScale += Time.deltaTime * restoreTimeSpeed;
+            }
+            else
+            {
+                Time.timeScale = 1;
+                restoreTime = false;
+            }
+        }
+    }
+    public void TimeSlow(float newTimeScale, int restoreSpeed, float delay)
+    {
+        restoreTimeSpeed = restoreSpeed;
+        Time.timeScale = newTimeScale;
+
+        if (delay > 0)
+        {
+            StopCoroutine(ResumeNormalTime(delay));
+            StartCoroutine(ResumeNormalTime(delay));
+        }
+        else
+        {
+            restoreTime = true;
+        }
+    }
+
+    IEnumerator ResumeNormalTime(float delay)
+    {
+        restoreTime = true;
+        yield return new WaitForSeconds(delay);
+    }
+
+    void Heal()
+    {
+        
+        if (Input.GetButton("Healing") && Health < maxHealth && !playerState.Jumping && !playerState.Dashing)
+        {
+            playerState.healing = true;
+            healTimer += Time.deltaTime;
+            if(healTimer >= timeToHeal)
+            {
+                Health++;
+                healTimer = 0;
+                GameObject HealFX = Instantiate(healingLoopFX, transform.position, Quaternion.identity);
+                Destroy(HealFX, 1f);
+            }
+        }
+        else
+        {
+            playerState.healing = false;
+            healTimer = 0;
+            
+
         }
     }
 }
