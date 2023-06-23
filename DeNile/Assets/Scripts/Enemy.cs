@@ -36,7 +36,7 @@ public class Enemy : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        if(isRecoiling )
+        if(isRecoiling)
         {
             if(recoilTimer < recoilLength)
             {

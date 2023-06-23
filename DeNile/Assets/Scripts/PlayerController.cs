@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb;
-    private float xAxis;
+    private float xAxis, yAxis;
     private Animator playerAnim;
     private bool canDash = true;
     private bool dashed;
@@ -75,16 +76,16 @@ public class PlayerController : MonoBehaviour
 
     [Header("Player Recoil Settings")]
     
-    [SerializeField] int recoilXSteps = 5;
-    [SerializeField] float recoilXSpeed = 100;
-    private int stepsXRecoiled;
+    [SerializeField] int recoilXSteps, recoilYSteps = 5;
+    [SerializeField] float recoilXSpeed, recoilYSpeed = 100;
+    private int stepsXRecoiled, stepsYRecoiled;
     [Space(5)]
 
     [Header("Attack Settings")]
 
     [SerializeField] private float playerDamage;
-    [SerializeField] private Transform sideAttackCheck;
-    [SerializeField] private Vector2 sideAttackArea;
+    [SerializeField] private Transform sideAttackCheck, upAttackCheck, downAttackCheck;
+    [SerializeField] private Vector2 sideAttackArea, upAttackArea, downAttackArea;
     [SerializeField] private LayerMask attackableLayer;
     [SerializeField] private GameObject slashFX;
     private bool attack = false;
@@ -105,8 +106,9 @@ public class PlayerController : MonoBehaviour
         {
             Instance = this;
         }
+        DontDestroyOnLoad(gameObject);
     }
-    // Start is called before the first frame update
+
     void Start()
     {
         playerState = GetComponent<PlayerStateList>();
@@ -126,26 +128,26 @@ public class PlayerController : MonoBehaviour
         manaStorage.fillAmount = mana;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        GetInputs();
-        UpdateJumpingBools();
+            GetInputs();
+            UpdateJumpingBools();
 
-        if (playerState.Dashing) return;
-        FlipPlayer();
-        Move();
-        Jump();
-        StartDash();
-        Attack();
-        ResetTimeScale();
-        InvincibilityFlicker();
-        Heal();
+            if (playerState.Dashing) return;
+            FlipPlayer();
+            Move();
+            Jump();
+            StartDash();
+            Attack();
+            ResetTimeScale();
+            InvincibilityFlicker();
+            Heal();
+
     }
 
     private void FixedUpdate()
     {
-        if(playerState.Dashing) return;
+        if (playerState.Dashing) return;
         playerRecoil();
     }
 
@@ -153,11 +155,15 @@ public class PlayerController : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(sideAttackCheck.position, sideAttackArea);
+        Gizmos.DrawWireCube(upAttackCheck.position, upAttackArea);
+        Gizmos.DrawWireCube(downAttackCheck.position, downAttackArea);
     }
 
     void GetInputs()
     {
         xAxis = Input.GetAxisRaw("Horizontal");
+
+        yAxis = Input.GetAxisRaw("Vertical");
 
         attack = Input.GetButtonDown("Fire1");
     }
@@ -202,7 +208,8 @@ public class PlayerController : MonoBehaviour
         playerState.Dashing = true;
         playerAnim.SetTrigger("Dashing");
         rb.gravityScale = 0;
-        rb.velocity = new Vector2(transform.localScale.x * dashSpeed, 0);
+        int direction = playerState.lookingRight ? 1 : -1;
+        rb.velocity = new Vector2(direction * dashSpeed, 0);
         yield return new WaitForSeconds(dashTime);
         rb.gravityScale = gravity;
         playerState.Dashing = false;
@@ -218,10 +225,23 @@ public class PlayerController : MonoBehaviour
             lastAttacked = 0;
             playerAnim.SetTrigger("Attacking");
 
-            Hit(sideAttackCheck, sideAttackArea, ref playerState.recoilingX, recoilXSpeed);
+            if(yAxis == 0 || yAxis < 0 && isGrounded())
+            {
+                Hit(sideAttackCheck, sideAttackArea, ref playerState.recoilingX, recoilXSpeed);
 
-            Instantiate(slashFX, sideAttackCheck);
+                Instantiate(slashFX, sideAttackCheck);
+            }
+            else if (yAxis > 0)
+            {
+                Hit(upAttackCheck, upAttackArea, ref playerState.recoilingY, recoilYSpeed);
 
+                SlashEffectAngle(slashFX, 90, upAttackCheck);
+            }
+            else if (yAxis < 0 && !isGrounded())
+            {
+                Hit(downAttackCheck, downAttackArea, ref playerState.recoilingY, recoilYSpeed);
+                SlashEffectAngle(slashFX, -90, downAttackCheck);
+            }
         }
     }
 
@@ -247,7 +267,13 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+    }
 
+    void SlashEffectAngle(GameObject slashFX, int FXAngle, Transform attackTransform)
+    {
+        slashFX = Instantiate(slashFX, attackTransform);
+        slashFX.transform.eulerAngles = new Vector3 (0, 0, FXAngle);
+        slashFX.transform.localScale = new Vector2(transform.localScale.x, transform.localScale.y);
     }
 
     void playerRecoil()
@@ -264,6 +290,24 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        if (playerState.recoilingY)
+        {
+            if(yAxis < 0)
+            {
+                rb.gravityScale = 0;
+                rb.velocity = new Vector2(rb.velocity.x, recoilYSpeed);
+            }
+            else
+            {
+                rb.velocity = new Vector2(rb.velocity.x, -recoilYSpeed);
+            }
+            extraJumpCounter = 0;
+        }
+        else
+        {
+            rb.gravityScale = gravity;
+        }
+
         if(playerState.recoilingX && stepsXRecoiled < recoilXSteps)
         {
             stepsXRecoiled++;
@@ -272,12 +316,32 @@ public class PlayerController : MonoBehaviour
         {
             StopRecoilX();
         }
+
+        if (playerState.recoilingY && stepsYRecoiled < recoilYSteps)
+        {
+            stepsYRecoiled++;
+        }
+        else
+        {
+            StopRecoilY();
+        }
+
+        if (isGrounded())
+        {
+            StopRecoilY();
+        }
     }
 
     void StopRecoilX()
     {
         stepsXRecoiled = 0;
         playerState.recoilingX = false;
+    }
+
+    void StopRecoilY()
+    {
+        stepsYRecoiled = 0;
+        playerState.recoilingY = false;
     }
 
     public bool isGrounded()
@@ -296,15 +360,7 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, 0);
-
-            playerState.Jumping = false;
-        }
-        if (!playerState.Jumping)
-        {
-            if (jumpBufferCounter > 0 && coyoteTimeCounter > 0)
+            if (jumpBufferCounter > 0 && coyoteTimeCounter > 0 && !playerState.Jumping)
             {
                 rb.velocity = new Vector3(rb.velocity.x, jumpForce);
 
@@ -318,10 +374,14 @@ public class PlayerController : MonoBehaviour
 
                 rb.velocity = new Vector3(rb.velocity.x, jumpForce);
             }
-        }
 
+            if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, 0);
+
+                playerState.Jumping = false;
+            }
         playerAnim.SetBool("Jumping", !isGrounded());
-
     }
 
     void UpdateJumpingBools()
@@ -351,8 +411,10 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+
         Health -= Mathf.RoundToInt(damage);
         StartCoroutine(CurrentlyInvincible());
+
     }
 
     IEnumerator CurrentlyInvincible()

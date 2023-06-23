@@ -7,12 +7,13 @@ public class Sobek : Enemy
     // Start is called before the first frame update
     protected override void Start()
     {
-        enemyRB.gravityScale = 12f;
+        
     }
 
     protected override void Awake()
     {
         base.Awake();
+        enemyRB.gravityScale = 12f;
     }
     // Update is called once per frame
     protected override void Update()
