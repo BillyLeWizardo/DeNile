@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -29,6 +31,13 @@ public class PlayerController : MonoBehaviour
     float healTimer;
     [SerializeField] float timeToHeal;
     [SerializeField] private GameObject healingLoopFX;
+    [Space(5)]
+
+    [Header("Player Mana Settings")]
+    [SerializeField] float mana;
+    [SerializeField] float manaDrainSpeed;
+    [SerializeField] float manaGain;
+    [SerializeField] private UnityEngine.UI.Image manaStorage;
     [Space(5)]
 
     [Header("Player Movement Settings")]
@@ -111,6 +120,10 @@ public class PlayerController : MonoBehaviour
         gravity = rb.gravityScale;
 
         Health = maxHealth;
+
+        Mana = mana;
+
+        manaStorage.fillAmount = mana;
     }
 
     // Update is called once per frame
@@ -225,7 +238,13 @@ public class PlayerController : MonoBehaviour
         {
             if (objectsHit[i].GetComponent<Enemy>() != null)
             {
-                objectsHit[i].GetComponent<Enemy>().enemyHit(playerDamage, (transform.position - objectsHit[i].transform.position).normalized, recoilStrength);
+                objectsHit[i].GetComponent<Enemy>().enemyHit(playerDamage, 
+                    (transform.position - objectsHit[i].transform.position).normalized, recoilStrength);
+
+                if (objectsHit[i].CompareTag("Enemy"))
+                {
+                    Mana += manaGain;
+                }
             }
         }
 
@@ -367,6 +386,20 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+
+    public float Mana
+    {
+        get { return mana; }
+        set
+        {
+            if(mana != value)
+            {
+                mana = Mathf.Clamp(value, 0, 1);
+                manaStorage.fillAmount = mana;
+            }
+        }
+    }
+
     void ResetTimeScale()
     {
         if(restoreTime)
@@ -406,8 +439,8 @@ public class PlayerController : MonoBehaviour
 
     void Heal()
     {
-        
-        if (Input.GetButton("Healing") && Health < maxHealth && !playerState.Jumping && !playerState.Dashing)
+
+        if (Input.GetButton("Healing") && Health < maxHealth && Mana > 0 && !playerState.Jumping && !playerState.Dashing && xAxis == 0)
         {
             playerState.healing = true;
             healTimer += Time.deltaTime;
@@ -418,13 +451,12 @@ public class PlayerController : MonoBehaviour
                 GameObject HealFX = Instantiate(healingLoopFX, transform.position, Quaternion.identity);
                 Destroy(HealFX, 1f);
             }
+            Mana -= Time.deltaTime * manaDrainSpeed;
         }
         else
         {
             playerState.healing = false;
             healTimer = 0;
-            
-
         }
     }
 }
