@@ -75,9 +75,11 @@ public class PlayerController : MonoBehaviour
     [Space(5)]
 
     [Header("Player Recoil Settings")]
-    
-    [SerializeField] int recoilXSteps, recoilYSteps = 5;
-    [SerializeField] float recoilXSpeed, recoilYSpeed = 100;
+
+    [SerializeField] int recoilXSteps = 3;
+    [SerializeField] int recoilYSteps = 3;
+    [SerializeField] float recoilXSpeed = 25;
+    [SerializeField] float recoilYSpeed = 25;
     private int stepsXRecoiled, stepsYRecoiled;
     [Space(5)]
 

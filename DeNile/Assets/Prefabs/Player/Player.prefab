@@ -304,7 +304,7 @@ MonoBehaviour:
   recoilXSteps: 2
   recoilYSteps: 3
   recoilXSpeed: 25
-  recoilYSpeed: 15
+  recoilYSpeed: 17.5
   playerDamage: 1
   sideAttackCheck: {fileID: 8009188790045552581}
   upAttackCheck: {fileID: 8009188790521060555}

@@ -121,11 +121,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyHealth: 4
-  recoilLength: 0.5
-  recoilStrength: 5
+  recoilLength: 3
+  recoilStrength: 25
   isRecoiling: 0
   player: {fileID: 0}
-  speed: 3
+  speed: 4
   enemyDamage: 1
 --- !u!61 &5876693698311035340
 BoxCollider2D:
