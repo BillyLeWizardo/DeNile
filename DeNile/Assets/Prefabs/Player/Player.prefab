@@ -154,7 +154,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8009188791446771930}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.24, y: -0.94, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -301,10 +301,10 @@ MonoBehaviour:
   GroundLayer:
     serializedVersion: 2
     m_Bits: 8
-  recoilXSteps: 2
-  recoilYSteps: 3
+  recoilXSteps: 4
+  recoilYSteps: 2
   recoilXSpeed: 25
-  recoilYSpeed: 17.5
+  recoilYSpeed: 25
   playerDamage: 1
   sideAttackCheck: {fileID: 8009188790045552581}
   upAttackCheck: {fileID: 8009188790521060555}

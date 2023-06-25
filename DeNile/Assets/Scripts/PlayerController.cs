@@ -20,18 +20,17 @@ public class PlayerController : MonoBehaviour
     private SpriteRenderer sr;
 
     [Header("Player Stat Settings")]
-    
-    [SerializeField] private GameObject ManaLeak;
-    [SerializeField] private float hitFlashSpeed;
+
     public int health;
     public int maxHealth;
+    [SerializeField] float timeToHeal;
+    [SerializeField] private float hitFlashSpeed;
+    [SerializeField] private GameObject DamageParticles;
+    [SerializeField] private GameObject HealingParticles;
 
     public delegate void OnHealthChangedDelegate();
     public OnHealthChangedDelegate onHealthChangedCallback;
-
     float healTimer;
-    [SerializeField] float timeToHeal;
-    [SerializeField] private GameObject healingLoopFX;
     [Space(5)]
 
     [Header("Player Mana Settings")]
@@ -49,12 +48,11 @@ public class PlayerController : MonoBehaviour
     [Header("Player Jump Settings")]
     
     [SerializeField] private float jumpForce = 25;
-    
-    private int jumpBufferCounter = 0;
     [SerializeField] private int jumpBufferFrames;
-
-    private float coyoteTimeCounter = 0;
     [SerializeField] private float coyoteTime;
+
+    private int jumpBufferCounter = 0;
+    private float coyoteTimeCounter = 0;
     [Space(5)]
 
     [Header("Player Ability Settings")]
@@ -62,8 +60,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashSpeed;
     [SerializeField] private float dashTime;
     [SerializeField] private float dashCooldown;
-    private int extraJumpCounter = 0;
     [SerializeField] private int maxExtraJumps;
+    private int extraJumpCounter = 0;
     [Space(5)]
 
     [Header("Ground Check Settings")]
@@ -86,12 +84,15 @@ public class PlayerController : MonoBehaviour
     [Header("Attack Settings")]
 
     [SerializeField] private float playerDamage;
+    [SerializeField] private float attackCooldown;
+    [Space(5)]
     [SerializeField] private Transform sideAttackCheck, upAttackCheck, downAttackCheck;
     [SerializeField] private Vector2 sideAttackArea, upAttackArea, downAttackArea;
     [SerializeField] private LayerMask attackableLayer;
     [SerializeField] private GameObject slashFX;
     private bool attack = false;
-    private float attackCooldown, lastAttacked;
+    private float lastAttacked;
+
     [Space(5)]
 
 
@@ -303,7 +304,6 @@ public class PlayerController : MonoBehaviour
             {
                 rb.velocity = new Vector2(rb.velocity.x, -recoilYSpeed);
             }
-            extraJumpCounter = 0;
         }
         else
         {
@@ -422,7 +422,7 @@ public class PlayerController : MonoBehaviour
     IEnumerator CurrentlyInvincible()
     {
         playerState.invincibleState = true;
-        GameObject manaLeakParticles = Instantiate(ManaLeak, transform.position, Quaternion.identity);
+        GameObject manaLeakParticles = Instantiate(DamageParticles, transform.position, Quaternion.identity);
         Destroy(manaLeakParticles, 1.5f);
         yield return new WaitForSeconds(1f);
         playerState.invincibleState = false;
@@ -512,7 +512,7 @@ public class PlayerController : MonoBehaviour
             {
                 Health++;
                 healTimer = 0;
-                GameObject HealFX = Instantiate(healingLoopFX, transform.position, Quaternion.identity);
+                GameObject HealFX = Instantiate(HealingParticles, transform.position, Quaternion.identity);
                 Destroy(HealFX, 1f);
             }
             Mana -= Time.deltaTime * manaDrainSpeed;
