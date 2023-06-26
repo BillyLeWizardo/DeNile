@@ -16,6 +16,11 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected float enemyHealth;
     [Space(5)]
 
+    [Header("Health Bar Settings")]
+    [SerializeField] protected GameObject enemyHealthBarFill;
+    [SerializeField] protected GameObject enemyDamageFX;
+    [Space(5)]
+
     [Header("Enemy Movement Settings")]
     [SerializeField] protected float speed;
     [SerializeField] protected Transform pointA, pointB;
@@ -54,6 +59,7 @@ public class Enemy : MonoBehaviour
     }
     protected virtual void Update()
     {
+
         if (enemyHealth <= 0)
         {
             Destroy(gameObject);
@@ -92,9 +98,12 @@ public class Enemy : MonoBehaviour
     public virtual void enemyHit(float damageDone, Vector2 hitDirection, float hitStrength)
     {
         enemyHealth -= damageDone;
+        enemyHealthBarFill.transform.localScale = new Vector2(enemyHealth, 0.2f);
         if(!isRecoiling)
         {
+            GameObject enemyDamageParticles = Instantiate(enemyDamageFX, transform.position, Quaternion.identity);
             enemyRB.AddForce(-hitStrength * recoilStrength * hitDirection); //Recoils the enemy in the direction the hit comes from
+            Destroy(enemyDamageParticles, 1.5f);
         }
         
     }
