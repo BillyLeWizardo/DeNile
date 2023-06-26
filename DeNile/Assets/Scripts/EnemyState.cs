@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class EnemyState : MonoBehaviour
 {
-    public bool enemyWalking;
+    public bool enemyWalking; //Used to trigger animations for the enemy
 }

@@ -8,11 +8,11 @@ public class MainMenu : MonoBehaviour
 {
     public void TutorialPlay()
     {
-        SceneManager.LoadScene("Tutorial Level");
+        SceneManager.LoadScene("Tutorial Level"); //Loads the tutorial level when the button is pressed
     }
 
     public void QuitGame()
     {
-        Application.Quit();
+        Application.Quit(); //Closes the application
     }
 }

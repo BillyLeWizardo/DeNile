@@ -45,50 +45,50 @@ public class Enemy : MonoBehaviour
 
     protected virtual void Awake()
     {
-        enemyRB = GetComponent<Rigidbody2D>();
+        enemyRB = GetComponent<Rigidbody2D>(); //Gets the rigid body component
 
-        enemySR = GetComponent<SpriteRenderer>();
+        enemySR = GetComponent<SpriteRenderer>(); //Gets the sprite renderer component
 
-        enemyAnim = GetComponent<Animator>();
+        enemyAnim = GetComponent<Animator>(); //Gets the animator component
 
-        enemyState = GetComponent<EnemyState>();
+        enemyState = GetComponent<EnemyState>(); //Gets the enemy state script component
 
-        player = PlayerController.Instance;
+        player = PlayerController.Instance; //Sets the player variable to the active player instance
 
-        currentPoint = pointB.transform;
+        currentPoint = pointB.transform; //Sets the current point for the enemy to walk towards on it's patrol path
     }
     protected virtual void Update()
     {
 
         if (enemyHealth <= 0)
         {
-            Destroy(gameObject);
+            Destroy(gameObject); //If the enemy's health hits 0 it kills the enemy gameobject
         }
         if(isRecoiling)
         {
             if(recoilTimer < recoilLength)
             {
-                recoilTimer += Time.deltaTime;
+                recoilTimer += Time.deltaTime; //Increases the recoil timer if it hasn't hit the max time spent recoiling
             }
             else
             {
-                isRecoiling = false;
+                isRecoiling = false; //Stops the enemy from recoiling and resets the timer for when it is hit next
                 recoilTimer = 0;
             }
         }
 
         if (!isRecoiling)
         {
-            EnemyPatrol();
+            EnemyPatrol(); //Triggers the enemy patrol movement as well as animation if the enemy is NOT recoiling
             enemyAnim.SetBool("Walking", true);
         }
         else
         {
-            enemyAnim.SetBool("Walking", false);
+            enemyAnim.SetBool("Walking", false); //Pauses the animation if the enemy is hit and is recoiling
         }
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmos() //Used to draw Gizmos in the editor to make editing the patrol path easier
     {
         Gizmos.DrawWireSphere(pointA.transform.position, 0.5f);
         Gizmos.DrawWireSphere(pointB.transform.position, 0.5f);
@@ -97,54 +97,53 @@ public class Enemy : MonoBehaviour
 
     public virtual void enemyHit(float damageDone, Vector2 hitDirection, float hitStrength)
     {
-        enemyHealth -= damageDone;
-        enemyHealthBarFill.transform.localScale = new Vector2(enemyHealth, 0.2f);
+        enemyHealth -= damageDone; //Descreses the enemy health
+        enemyHealthBarFill.transform.localScale = new Vector2(enemyHealth, 0.2f); //Decreases the size of the enemy healthbar to match the current health
         if(!isRecoiling)
         {
-            GameObject enemyDamageParticles = Instantiate(enemyDamageFX, transform.position, Quaternion.identity);
+            GameObject enemyDamageParticles = Instantiate(enemyDamageFX, transform.position, Quaternion.identity); //Spawn enemy hit particle effects
             enemyRB.AddForce(-hitStrength * recoilStrength * hitDirection); //Recoils the enemy in the direction the hit comes from
-            Destroy(enemyDamageParticles, 1.5f);
+            Destroy(enemyDamageParticles, 1.5f); //Destroys enemy FX after 1.5 seconds
         }
         
     }
     protected virtual void Attack()
     {
-        PlayerController.Instance.TakeDamage(enemyDamage);
+        PlayerController.Instance.TakeDamage(enemyDamage); //If the enemy attacks, damage the player by their damage amount
     }
 
-    protected void OnCollisionStay2D(Collision2D target)
+    protected void OnCollisionStay2D(Collision2D target) //Triggers when the enemy collides with the player
     {
-        if (target.gameObject.CompareTag("Player") && !PlayerController.Instance.playerState.invincibleState)
+        if (target.gameObject.CompareTag("Player") && !PlayerController.Instance.playerState.invincibleState) 
         {
+            //If the player is not invincible and the enemy collides with it, it will attack the player and trigger the enemy's attacking animation
             Attack();
             enemyAnim.SetTrigger("Attacking");
-            PlayerController.Instance.TimeSlow(0, 5, 0.5f);
+            PlayerController.Instance.TimeSlow(0, 5, 0.5f); //Slows time when the player takes damage
         }
 
     }
 
     protected virtual void EnemyPatrol()
     {
-        Vector2 point = currentPoint.position - transform.position;
-
         if(currentPoint == pointB.transform)
         {
-            enemyRB.velocity = new Vector2(speed, 0);
+            enemyRB.velocity = new Vector2(speed, 0); //Moves the enemy towards the point B
         }
         else
         {
-            enemyRB.velocity = new Vector2(-speed, 0);
+            enemyRB.velocity = new Vector2(-speed, 0); //Moves the enemy towards the point A
         }
 
-        if(Vector2.Distance(transform.position, currentPoint.position) < 0.5f && currentPoint == pointB.transform)
+        if(Vector2.Distance(transform.position, currentPoint.position) < 0.5f && currentPoint == pointB.transform) //Checks if the enemy has reached point B
         {
-            currentPoint = pointA.transform;
-            transform.localScale = new Vector2(-2, transform.localScale.y);
+            currentPoint = pointA.transform; //Changes the active point
+            transform.localScale = new Vector2(-2, transform.localScale.y); //Flips the enemy
         }
-        if (Vector2.Distance(transform.position, currentPoint.position) < 0.5f && currentPoint == pointA.transform)
+        if (Vector2.Distance(transform.position, currentPoint.position) < 0.5f && currentPoint == pointA.transform) //^^
         {
-            currentPoint = pointB.transform;
-            transform.localScale = new Vector2(2, transform.localScale.y);
+            currentPoint = pointB.transform; //Changes the active point
+            transform.localScale = new Vector2(2, transform.localScale.y); //^^
         }
 
     }

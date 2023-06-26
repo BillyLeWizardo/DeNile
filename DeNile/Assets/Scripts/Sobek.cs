@@ -14,7 +14,7 @@ public class Sobek : Enemy
     protected override void Awake()
     {
         base.Awake();
-        enemyRB.gravityScale = 12f;
+        enemyRB.gravityScale = 12f; //Sets the gravity scale
     }
 
     protected override void Update()
@@ -23,7 +23,7 @@ public class Sobek : Enemy
         //FlipEnemy();
     }
 
-    //void FlipEnemy()
+    //void FlipEnemy() THIS IS NOT IN USE ANYMORE!
     //{
     //    if (transform.position.x > PlayerController.Instance.transform.position.x)
     //    {
@@ -37,6 +37,6 @@ public class Sobek : Enemy
 
     public override void enemyHit(float damageDone, Vector2 hitDirection, float hitStrength)
     {
-        base.enemyHit(damageDone, hitDirection, hitStrength);
+        base.enemyHit(damageDone, hitDirection, hitStrength); //If the enemy 'SOBEK' is hit, trigger it according to the base enemy class with these variables
     }
 }
