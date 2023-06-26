@@ -2362,6 +2362,11 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1873791482 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3483407326334741474, guid: fae2342e6b6f15a498623f3d8686214f, type: 3}
+  m_PrefabInstance: {fileID: 4943409790562052341}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2112726948
 GameObject:
   m_ObjectHideFlags: 0
@@ -2714,6 +2719,10 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 3483407326334741474, guid: fae2342e6b6f15a498623f3d8686214f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4239464061728014926, guid: fae2342e6b6f15a498623f3d8686214f, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -10
@@ -2974,6 +2983,10 @@ PrefabInstance:
       propertyPath: attackCooldown
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 8009188791446771929, guid: dc2164ee794587e4bbef53305f9e4154, type: 3}
+      propertyPath: gameOverScreen
+      value: 
+      objectReference: {fileID: 1873791482}
     - target: {fileID: 8009188791446771929, guid: dc2164ee794587e4bbef53305f9e4154, type: 3}
       propertyPath: DamageParticles
       value: 

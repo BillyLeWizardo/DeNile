@@ -27,6 +27,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float hitFlashSpeed;
     [SerializeField] private GameObject DamageParticles;
     [SerializeField] private GameObject HealingParticles;
+    [SerializeField] private GameObject gameOverScreen;
 
     public delegate void OnHealthChangedDelegate();
     public OnHealthChangedDelegate onHealthChangedCallback;
@@ -133,18 +134,24 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-            GetInputs();
-            UpdateJumpingBools();
+        GetInputs();
+        UpdateJumpingBools();
 
-            if (playerState.Dashing) return;
-            FlipPlayer();
-            Move();
-            Jump();
-            StartDash();
-            Attack();
-            ResetTimeScale();
-            InvincibilityFlicker();
-            Heal();
+        if(Health <= 0)
+        {
+            playerDies();
+        }
+
+        if (playerState.Dashing) return;
+
+        FlipPlayer();
+        Move();
+        Jump();
+        StartDash();
+        Attack();
+        ResetTimeScale();
+        InvincibilityFlicker();
+        Heal();
 
     }
 
@@ -152,6 +159,12 @@ public class PlayerController : MonoBehaviour
     {
         if (playerState.Dashing) return;
         playerRecoil();
+    }
+
+    private void playerDies()
+    {
+        Time.timeScale = 0f;
+        gameOverScreen.SetActive(true);
     }
 
     private void OnDrawGizmos()
